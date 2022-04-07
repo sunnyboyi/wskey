@@ -98,8 +98,18 @@ def ql_login():  # 方法 青龙登录(获取Token 功能同上)
 
 # 返回值 list[wskey]
 def get_wskey():  # 方法 获取 wskey值 [系统变量传递]
+    wskey_list=[]
+    for i in range(len(envlist)):  # For循环 变量[envlist]的数量
+        if "name" in envlist[i] and envlist[i]["name"] == "JD_WSCK":  # 判断 envlist内容
+            if envlist[i]['value'].rfind('&') > -1:
+                wskey_list =wskey_list+envlist[i]['value'].split('&')
+            elif envlist[i]['value'].rfind('\n') > -1:
+                wskey_list = wskey_list+envlist[i]['value'].split('\n')
+            else:
+                wskey_list.append(envlist[i]['value'])            
+        else:
+            continue  # 继续循环
     if "JD_WSCK" in os.environ:  # 判断 JD_WSCK是否存在于环境变量
-        wskey_list = os.environ['JD_WSCK'].split('&')  # 读取系统变量 以 & 分割变量
         if len(wskey_list) > 0:  # 判断 WSKEY 数量 大于 0 个
             return wskey_list  # 返回 WSKEY [LIST]
         else:  # 判断分支
@@ -108,6 +118,17 @@ def get_wskey():  # 方法 获取 wskey值 [系统变量传递]
     else:  # 判断分支
         logger.info("未添加JD_WSCK变量")  # 标准日志输出
         sys.exit(0)  # 脚本退出
+
+    # if "JD_WSCK" in os.environ:  # 判断 JD_WSCK是否存在于环境变量
+    #     wskey_list = os.environ['JD_WSCK'].split('&')  # 读取系统变量 以 & 分割变量
+    #     if len(wskey_list) > 0:  # 判断 WSKEY 数量 大于 0 个
+    #         return wskey_list  # 返回 WSKEY [LIST]
+    #     else:  # 判断分支
+    #         logger.info("JD_WSCK变量未启用")  # 标准日志输出
+    #         sys.exit(1)  # 脚本退出
+    # else:  # 判断分支
+    #     logger.info("未添加JD_WSCK变量")  # 标准日志输出
+    #     sys.exit(0)  # 脚本退出
 
 
 # 返回值 list[jd_cookie]
@@ -458,8 +479,8 @@ if __name__ == '__main__':   # Python主函数执行入口
     cloud_arg = cloud_info()  # 调用方法 [cloud_info] 并赋值 [cloud_arg]
     update()  # 调用方法 [update]
     ua = cloud_arg['User-Agent']  # 设置全局变量 UA
-    wslist = get_wskey()  # 调用方法 [get_wskey] 并赋值 [wslist]
     envlist = get_env()  # 调用方法 [get_env] 并赋值 [envlist]
+    wslist = get_wskey()  # 调用方法 [get_wskey] 并赋值 [wslist]
     if "WSKEY_SLEEP" in os.environ and str(os.environ["WSKEY_SLEEP"]).isdigit():  # 判断变量[WSKEY_SLEEP]是否为数字类型
         sleepTime = int(os.environ["WSKEY_SLEEP"])  # 获取变量 [int]
     else:  # 判断分支
