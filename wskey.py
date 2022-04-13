@@ -100,7 +100,7 @@ def ql_login():  # 方法 青龙登录(获取Token 功能同上)
 def get_wskey():  # 方法 获取 wskey值 [系统变量传递]
     wskey_list=[]
     for i in range(len(envlist)):  # For循环 变量[envlist]的数量
-        if "name" in envlist[i] and envlist[i]["name"] == "JD_WSCK":  # 判断 envlist内容
+        if "name" in envlist[i] and envlist[i]["name"] == "DDCK":  # 判断 envlist内容
             if envlist[i]['value'].rfind('&') > -1:
                 wskey_list =wskey_list+envlist[i]['value'].split('&')
             elif envlist[i]['value'].rfind('\n') > -1:
@@ -109,14 +109,14 @@ def get_wskey():  # 方法 获取 wskey值 [系统变量传递]
                 wskey_list.append(envlist[i]['value'])            
         else:
             continue  # 继续循环
-    if "JD_WSCK" in os.environ:  # 判断 JD_WSCK是否存在于环境变量
+    if "DDCK" in os.environ:  # 判断 JD_WSCK是否存在于环境变量
         if len(wskey_list) > 0:  # 判断 WSKEY 数量 大于 0 个
             return wskey_list  # 返回 WSKEY [LIST]
         else:  # 判断分支
-            logger.info("JD_WSCK变量未启用")  # 标准日志输出
+            logger.info("DDCK变量未启用")  # 标准日志输出
             sys.exit(1)  # 脚本退出
     else:  # 判断分支
-        logger.info("未添加JD_WSCK变量")  # 标准日志输出
+        logger.info("未添加DDCK变量")  # 标准日志输出
         sys.exit(0)  # 脚本退出
 
     # if "JD_WSCK" in os.environ:  # 判断 JD_WSCK是否存在于环境变量
