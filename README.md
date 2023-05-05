@@ -23,7 +23,7 @@ ql repo https://e.coding.net/HelloDNS/sign/wskey.git "wskey"
 # 是本地的端口 不是 Docker 映射出去的端口! 如果你映射参数是 8888:5700 仍然填写5700
 
 变量名: WSKEY_DISCHECK 参数: 任意(str)
-# 设置 QL_WSCK变量后变量后 不检查有效性 直接更新 不使用请删除 而不是禁用
+# 设置 WSKEY_DISCHECK变量后变量后 不检查有效性 直接更新 不使用请删除 而不是禁用
 
 变量名: WSKEY_AUTO_DISABLE 参数: 任意(str)	
 # 设置 WSKEY_AUTO_DISABLE变量后 不会自动禁用变量
@@ -42,7 +42,15 @@ ql repo https://e.coding.net/HelloDNS/sign/wskey.git "wskey"
 ---
 ### 更新 · 摘要
 
-#### Version 2022-05-24 青龙版本: 2.12.1
+#### Version 2022-10-31 青龙版本: 2.14.8
+
+---
+**2022年10月31日 11:29:55**
+- **移除HTTP接口**
+
+---
+**2022年10月27日 17:31:20**
+- **修复脚本报错问题**
 
 ---
 **2022年5月24日 01:36:22**
