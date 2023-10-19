@@ -311,6 +311,131 @@ def arcadia_subcookie(cookie, token):
     res = post(url, data=json.dumps(data), headers=headers).json()
     return res
 
+# 登录青龙 返回值 token
+def get_qltoken(username, password, twoFactorSecret):  # 方法 用于获取青龙 Token
+    printf("Token失效, 新登陆\n")  # 日志输出
+    remot_ql_url='http://172.17.0.2:5600/'
+    if twoFactorSecret:
+        try:
+            twoCode = ttotp(twoFactorSecret)
+        except Exception as err:
+            printf(str(err))  # Debug日志输出
+            printf("TOTP异常")
+            sys.exit(1)
+        url = remot_ql_url + "api/user/login"  # 设置青龙地址 使用 format格式化自定义端口
+        payload = json.dumps({
+            'username': username,
+            'password': password
+        })  # HTTP请求载荷
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }  # HTTP请求头 设置为 Json格式
+        try:  # 异常捕捉
+            res = requests.post(url=url, headers=headers, data=payload)  # 使用 requests模块进行 HTTP POST请求
+            if res.status_code == 200 and res.json()["code"] == 420:
+                url = remot_ql_url + 'api/user/two-factor/login'
+                data = json.dumps({
+                    "username": username,
+                    "password": password,
+                    "code": twoCode
+                })
+                res = requests.put(url=url, headers=headers, data=data)
+                if res.status_code == 200 and res.json()["code"] == 200:
+                    token = res.json()["data"]['token']  # 从 res.text 返回值中 取出 Token值
+                    return token
+                else:
+                    printf("两步校验失败\n")  # 日志输出
+                    sys.exit(1)
+            elif res.status_code == 200 and res.json()["code"] == 200:
+                token = res.json()["data"]['token']  # 从 res.text 返回值中 取出 Token值
+                return token
+        except Exception as err:
+            logger.debug(str(err))  # Debug日志输出
+            sys.exit(1)
+    else:
+        url = remot_ql_url + 'api/user/login'
+        payload = {
+            'username': username,
+            'password': password
+        }  # HTTP请求载荷
+        payload = json.dumps(payload)  # json格式化载荷
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }  # HTTP请求头 设置为 Json格式
+        try:  # 异常捕捉
+            res = requests.post(url=url, headers=headers, data=payload)  # 使用 requests模块进行 HTTP POST请求
+            if res.status_code == 200 and res.json()["code"] == 200:
+                token = res.json()["data"]['token']  # 从 res.text 返回值中 取出 Token值
+                return token
+            else:
+                ql_send("青龙登录失败!")
+                sys.exit(1)  # 脚本退出
+        except Exception as err:
+            printf(str(err))  # Debug日志输出
+            printf("使用旧版青龙登录接口")
+            url = remot_ql_url + 'api/login'  # 设置青龙地址 使用 format格式化自定义端口
+            payload = {
+                'username': username,
+                'password': password
+            }  # HTTP请求载荷
+            payload = json.dumps(payload)  # json格式化载荷
+            headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }  # HTTP请求头 设置为 Json格式
+            try:  # 异常捕捉
+                res = requests.post(url=url, headers=headers, data=payload)  # 使用 requests模块进行 HTTP POST请求
+                token = json.loads(res.text)["data"]['token']  # 从 res.text 返回值中 取出 Token值
+            except Exception as err:  # 异常捕捉
+                printf(str(err))  # Debug日志输出
+                printf("青龙登录失败, 请检查面板状态!")  # 标准日志输出
+                ql_send('青龙登陆失败, 请检查面板状态.')
+                sys.exit(1)  # 脚本退出
+            else:  # 无异常执行分支
+                return token  # 返回 token值
+        # else:  # 无异常执行分支
+        #     return token  # 返回 token值
+
+
+# 返回值 Token
+def ql_login():  # 方法 青龙登录(获取Token 功能同上)
+    remot_ql_url='http://172.17.0.2:5600/'
+    path = '/ql/config/auth1.json'  # 设置青龙 auth文件地址
+    if not os.path.isfile(path):
+        path = '/ql/data/config/auth1.json'  # 尝试设置青龙 auth 新版文件地址
+    if os.path.isfile(path):  # 进行文件真值判断
+        with open(path, "r") as file:  # 上下文管理
+            auth = file.read()  # 读取文件
+            file.close()  # 关闭文件
+        auth = json.loads(auth)  # 使用 json模块读取
+        username = auth["username"]  # 提取 username
+        password = auth["password"]  # 提取 password
+        token = auth["token"]  # 提取 authkey
+        try:
+            twoFactorSecret = auth["twoFactorSecret"]
+        except Exception as err:
+            printf(str(err))  # Debug日志输出
+            twoFactorSecret = ''
+        if token == '':  # 判断 Token是否为空
+            return get_qltoken(username, password, twoFactorSecret)  # 调用方法 get_qltoken 传递 username & password
+        else:  # 判断分支
+            url = remot_ql_url + 'api/user'  # 设置URL请求地址 使用 Format格式化端口
+            headers = {
+                'Authorization': 'Bearer {0}'.format(token),
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36 Edg/94.0.992.38'
+            }  # 设置用于 HTTP头
+            res = requests.get(url=url, headers=headers)  # 调用 request模块发送 get请求
+            if res.status_code == 200:  # 判断 HTTP返回状态码
+                return token  # 有效 返回 token
+            else:  # 判断分支
+                return get_qltoken(username, password, twoFactorSecret)  # 调用方法 get_qltoken 传递 username & password
+    else:  # 判断分支
+        printf("没有发现auth文件, 你这是青龙吗???")  # 输出标准日志
+        sys.exit(0)  # 脚本退出
+
+
 def subcookie(pt_pin, cookie, token):
     if True:
         reamrk=""
@@ -318,7 +443,7 @@ def subcookie(pt_pin, cookie, token):
             strptpin=pt_pin
             if re.search('%', strptpin):
                 strptpin = unquote(strptpin, 'utf-8')
-            url = 'http://127.0.0.1:5600/api/envs'
+            url = 'http://172.17.0.2:5600/api/envs'
             headers = {'Authorization': f'Bearer {token}'}
             body = {
                 'searchValue': pt_pin,
@@ -345,7 +470,7 @@ def subcookie(pt_pin, cookie, token):
                         
             if old:
                 put(url, json=body, headers=headers)
-                url = 'http://127.0.0.1:5600/api/envs/enable'
+                url = 'http://172.17.0.2:5600/api/envs/enable'
                 if isline:
                     body = [body['_id']]
                 else:
@@ -447,7 +572,7 @@ def main():
         url = 'http://127.0.0.1:5600/api/envs'
         headers = {'Authorization': f'Bearer {token}'}
         body = {
-            'searchValue': 'JD_WSCK',
+            'searchValue': 'DDDD',
             'Authorization': f'Bearer {token}'
         }
         datas = get(url, params=body, headers=headers).json()['data']
@@ -471,6 +596,7 @@ def main():
         return
 
     if envtype == "ql":
+        remotToken=ql_login()
         for data in datas:
             randomuserAgent()
             if data['status']!=0:
@@ -481,7 +607,7 @@ def main():
             if "app_open" in cookie:
                 #printf("转换成功:"cookie)     
                 orgpin = cookie.split(";")[1].split("=")[1]            
-                subcookie(orgpin, cookie, token)
+                subcookie(orgpin, cookie, remotToken)
                 newpin=getRemark(orgpin,token)
                 resurt1=resurt1+f"转换成功：{newpin}\n"
             else:
